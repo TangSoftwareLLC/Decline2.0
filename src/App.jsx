@@ -1,23 +1,19 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import './App.css';
 import MeetingBlock from './components/MeetingBlock';
 
 const START_HOUR = 8;
 const END_HOUR = 18;
 const MEETING_PADDING = 6;
+const DEBUG_NOW = false;
+const DEBUG_TIME_STRING = '17:50'; // 5:50 PM
 
-const DAYS = [
-  { id: 'mon', label: 'Mon', date: 'Mar 3' },
-  { id: 'tue', label: 'Tue', date: 'Mar 4' },
-  { id: 'wed', label: 'Wed', date: 'Mar 5' },
-  { id: 'thu', label: 'Thu', date: 'Mar 6' },
-  { id: 'fri', label: 'Fri', date: 'Mar 7' },
-];
+const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 const MEETINGS = [
   {
     id: 'm1',
-    day: 'mon',
+    day: 0,
     start: '09:00',
     length: 60,
     variant: 'accepted',
@@ -27,7 +23,7 @@ const MEETINGS = [
   },
   {
     id: 'm2',
-    day: 'mon',
+    day: 0,
     start: '13:30',
     length: 30,
     variant: 'tentative',
@@ -37,7 +33,7 @@ const MEETINGS = [
   },
   {
     id: 'm3',
-    day: 'tue',
+    day: 1,
     start: '10:00',
     length: 120,
     variant: 'accepted',
@@ -47,7 +43,7 @@ const MEETINGS = [
   },
   {
     id: 'm4',
-    day: 'wed',
+    day: 2,
     start: '08:30',
     length: 30,
     variant: 'accepted',
@@ -57,7 +53,7 @@ const MEETINGS = [
   },
   {
     id: 'm5',
-    day: 'thu',
+    day: 3,
     start: '15:00',
     length: 60,
     variant: 'tentative',
@@ -67,7 +63,7 @@ const MEETINGS = [
   },
   {
     id: 'm6',
-    day: 'fri',
+    day: 4,
     start: '11:00',
     length: 60,
     variant: 'accepted',
@@ -77,19 +73,29 @@ const MEETINGS = [
   },
 ];
 
-const hourMarks = Array.from(
-  { length: (END_HOUR - START_HOUR) + 1 },
-  (_, idx) => {
-    const hour = START_HOUR + idx;
-    const suffix = hour >= 12 ? 'PM' : 'AM';
-    const displayHour = hour % 12 === 0 ? 12 : hour % 12;
-    const label = `${displayHour}:00 ${suffix}`;
-    return { id: idx, label };
-  },
-);
+const hourMarks = Array.from({ length: (END_HOUR - START_HOUR) + 1 }, (_, idx) => {
+  const hour = START_HOUR + idx;
+  const suffix = hour >= 12 ? 'PM' : 'AM';
+  const displayHour = hour % 12 === 0 ? 12 : hour % 12;
+  const label = `${displayHour}:00 ${suffix}`;
+  return { id: idx, label };
+});
 
 const totalMinutes = (END_HOUR - START_HOUR) * 60;
 const totalSlots = totalMinutes / 15;
+
+const parseTimeString = (value) => {
+  const [h, m] = value.split(':').map(Number);
+  return (h * 60) + m;
+};
+
+const getCurrentMinutes = () => {
+  if (DEBUG_NOW) {
+    return parseTimeString(DEBUG_TIME_STRING);
+  }
+  const now = new Date();
+  return (now.getHours() * 60) + now.getMinutes();
+};
 
 const computeSlotHeight = () => {
   if (typeof window === 'undefined') return 20;
@@ -114,6 +120,25 @@ const timeToOffset = (timeString) => {
 
 function App() {
   const [slotHeight, setSlotHeight] = useState(computeSlotHeight);
+  const [currentMinutes, setCurrentMinutes] = useState(getCurrentMinutes);
+
+  const days = useMemo(() => {
+    const today = new Date();
+    const todayKey = today.toDateString();
+    const currentDay = today.getDay(); // 0 = Sun
+    const offsetToMonday = (currentDay + 6) % 7; // days since Monday
+    const monday = new Date(today);
+    monday.setDate(today.getDate() - offsetToMonday);
+
+    return Array.from({ length: 5 }, (_, idx) => {
+      const date = new Date(monday);
+      date.setDate(monday.getDate() + idx);
+      const label = DAY_NAMES[date.getDay()];
+      const dateLabel = date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+      const isToday = date.toDateString() === todayKey;
+      return { id: idx, label, date: dateLabel, isToday };
+    });
+  }, []);
 
   useEffect(() => {
     const onResize = () => setSlotHeight(computeSlotHeight());
@@ -121,8 +146,17 @@ function App() {
     return () => window.removeEventListener('resize', onResize);
   }, []);
 
+  useEffect(() => {
+    const tick = () => setCurrentMinutes(getCurrentMinutes());
+    const id = window.setInterval(tick, 60 * 1000);
+    tick();
+    return () => window.clearInterval(id);
+  }, []);
+
   const dayGridHeight = totalSlots * slotHeight;
   const heightForLength = (length) => (length / 15) * slotHeight;
+  const nowLineOffset = ((currentMinutes - (START_HOUR * 60)) / 15) * slotHeight;
+  const showNowLine = currentMinutes >= START_HOUR * 60 && currentMinutes <= END_HOUR * 60;
 
   return (
     <div className="page">
@@ -133,11 +167,18 @@ function App() {
               {mark.label}
             </div>
           ))}
+          {showNowLine && (
+            <div
+              className="now-line gutter"
+              style={{ top: nowLineOffset }}
+              aria-hidden="true"
+            />
+          )}
         </div>
 
         <div className="day-columns">
-          {DAYS.map((day) => (
-            <div key={day.id} className="day-column">
+          {days.map((day) => (
+            <div key={day.id} className={`day-column${day.isToday ? ' current-day' : ''}`}>
               <div className="day-header">
                 <span className="day-label">{day.label}</span>
                 <span className="day-date">{day.date}</span>
@@ -146,6 +187,13 @@ function App() {
                 className="day-grid"
                 style={{ height: dayGridHeight }}
               >
+                {showNowLine && (
+                  <div
+                    className="now-line"
+                    style={{ top: nowLineOffset }}
+                    aria-label="current time indicator"
+                  />
+                )}
                 {MEETINGS.filter((meeting) => meeting.day === day.id).map((meeting) => {
                   const top = timeToOffset(meeting.start) * slotHeight;
                   const height = heightForLength(meeting.length);
