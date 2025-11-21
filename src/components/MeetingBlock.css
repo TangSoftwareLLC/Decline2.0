@@ -1,17 +1,19 @@
 .meeting-block {
-  min-width: 140px;
+  min-width: 100%;
+  width: 100%;
   box-sizing: border-box;
-  border-radius: var(--block-radius, 4px);
+  border-radius: var(--block-radius, 6px);
   padding: 8px 10px 8px 16px;
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.05);
+  box-shadow: 0 4px 12px rgba(12, 68, 204, 0.08);
   border: 1px solid var(--meeting-border, rgba(0, 0, 0, 0.06));
-  background: var(--meeting-bg, #eaf7ee);
-  color: var(--neutral-foreground, #1a1a1a);
+  background: var(--meeting-bg, #e9f3ff);
+  color: var(--neutral-foreground, #0f172a);
   position: relative;
-  margin: 2px 0;
+  margin: 0;
+  overflow: hidden; /* clip any overflowed text/accents inside the slot */
 }
 
 /* pseudo-element left accent */
@@ -24,9 +26,9 @@
   width: 6px;
   border-top-left-radius: var(--block-radius, 4px);
   border-bottom-left-radius: var(--block-radius, 4px);
-  background: var(--meeting-accent, #277035);
+  background: var(--meeting-accent, #2563eb);
   box-sizing: border-box;
-  border-right: 1px solid var(--meeting-accent, #277035);
+  border-right: 1px solid var(--meeting-accent, #2563eb);
   z-index: 1;
   pointer-events: none;
 }
@@ -37,37 +39,38 @@
 }
 
 .meeting-block.accepted {
-  background: var(--meeting-accepted-bg, #b7e3b8);
-  border-color: var(--meeting-border, rgba(0, 0, 0, 0.06));
+  background: var(--meeting-accepted-bg, #cce7ff);
+  border-color: rgba(16, 112, 224, 0.24);
 }
 
 .meeting-block.tentative {
-  background: var(--meeting-bg, #eaf7ee);
-  border: 1px dashed var(--meeting-accent, #277035);
+  background: var(--meeting-bg, #e9f3ff);
+  border: 1px dashed rgba(16, 112, 224, 0.5);
   border-left: none;
-  opacity: 1;
 }
 
 .meeting-block.tentative::before {
   background-image: repeating-linear-gradient(
     45deg,
-    var(--meeting-accent, #277035) 0 2px,
-    var(--meeting-bg, #eaf7ee) 2px 4px
+    var(--meeting-accent, #2563eb) 0 2px,
+    var(--meeting-bg, #e9f3ff) 2px 4px
   );
-  background-color: var(--meeting-bg, #eaf7ee);
-  border-left: 1px solid var(--meeting-accent, #277035);
-  border-top: 1px solid var(--meeting-accent, #277035);
-  border-bottom: 1px solid var(--meeting-accent, #277035);
+  background-color: var(--meeting-bg, #e9f3ff);
+  border-left: 1px solid var(--meeting-accent, #2563eb);
+  border-top: 1px solid var(--meeting-accent, #2563eb);
+  border-bottom: 1px solid var(--meeting-accent, #2563eb);
 }
 
 .meeting-content {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
+  justify-content: center;
   gap: 4px;
   width: 100%;
   flex: 1;
   text-align: left;
+  overflow: hidden;
 }
 
 .meeting-title {
@@ -87,4 +90,38 @@
   overflow: hidden;
   text-overflow: ellipsis;
   width: 100%;
+}
+
+.meeting-block.len-15 .meeting-content,
+.meeting-block.len-30 .meeting-content {
+  justify-content: center;
+  gap: 0;
+  align-items: flex-start;
+  text-align: left;
+}
+
+.meeting-block.len-30 .meeting-title {
+  font-size: 12px;
+  line-height: 1.2;
+  margin-top: 0;
+  width: 100%;
+}
+
+/* Allow overflow for 30-minute blocks while keeping vertical centering */
+.meeting-block.len-30 {
+  overflow: visible;
+}
+
+.meeting-block.len-30 .meeting-content {
+  overflow: visible;
+}
+
+.meeting-block.len-30 .meeting-room-info {
+  font-size: 11px;
+  color: rgba(15, 23, 42, 0.76);
+}
+
+.meeting-block.len-30 .meeting-room-info,
+.meeting-block.len-30 .meeting-organizer-info {
+  display: none;
 }
