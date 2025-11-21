@@ -11,8 +11,21 @@
   padding: 20px 24px 32px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 16px;
   color: #0f172a;
+}
+
+.playfield {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  flex: 1 1 auto;
+  height: calc(100vh - 80px);
+  max-height: calc(100vh - 80px);
+  min-height: 560px;
+  width: 100%;
+  overflow: hidden;
+  position: relative;
 }
 
 .calendar {
@@ -30,6 +43,8 @@
   --meeting-border: rgba(37, 99, 235, 0.22);
   --neutral-foreground: #0f172a;
   --block-radius: 8px;
+  flex: 1 1 auto;
+  min-height: 0; /* allow shrink within playfield */
 }
 
 .time-gutter {
@@ -145,4 +160,85 @@
   box-sizing: border-box;
   display: flex;
   align-items: stretch;
+}
+
+.paddle-area {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 18px;
+  display: grid;
+  grid-template-columns: 80px 1fr;
+  gap: 0;
+  min-height: 96px;
+  flex-shrink: 0;
+}
+
+.paddle-grid {
+  grid-column: 1 / span 2;
+  display: contents;
+}
+
+.paddle-gutter {
+  width: 80px;
+}
+
+.paddle-lane {
+  position: relative;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.paddle-shadow {
+  width: 100%;
+  display: flex;
+  justify-content: flex-start;
+  padding: 10px 12px;
+  position: relative;
+  height: 46px;
+  overflow: hidden;
+}
+
+.paddle {
+  height: 26px;
+  width: 220px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #1e3a8a, #2563eb);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: absolute;
+  top: 50%;
+  left: 0;
+  overflow: hidden;
+  will-change: transform;
+}
+
+.ball {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.45);
+  transition: opacity 120ms ease;
+  pointer-events: none;
+}
+
+.paddle::after {
+  content: '';
+  position: absolute;
+  inset: 2px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.05));
+  pointer-events: none;
+}
+
+.paddle-grip {
+  width: 40%;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.7);
 }
