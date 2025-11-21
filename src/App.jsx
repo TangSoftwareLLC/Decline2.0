@@ -149,13 +149,13 @@ function App() {
     const today = new Date();
     const todayKey = today.toDateString();
     const currentDay = today.getDay(); // 0 = Sun
-    const offsetToMonday = (currentDay + 6) % 7; // days since Monday
-    const monday = new Date(today);
-    monday.setDate(today.getDate() - offsetToMonday);
+    const offsetToSunday = currentDay; // days since Sunday
+    const sunday = new Date(today);
+    sunday.setDate(today.getDate() - offsetToSunday);
 
-    return Array.from({ length: 5 }, (_, idx) => {
-      const date = new Date(monday);
-      date.setDate(monday.getDate() + idx);
+    return Array.from({ length: 7 }, (_, idx) => {
+      const date = new Date(sunday);
+      date.setDate(sunday.getDate() + idx);
       const label = DAY_NAMES[date.getDay()];
       const dateLabel = date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
       const isToday = date.toDateString() === todayKey;
