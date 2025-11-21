@@ -15,7 +15,7 @@ const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MEETINGS = [
   {
     id: 'm1',
-    day: 0,
+    day: 1,
     start: '09:00',
     length: 60,
     variant: 'accepted',
@@ -25,7 +25,7 @@ const MEETINGS = [
   },
   {
     id: 'm2',
-    day: 0,
+    day: 5,
     start: '13:30',
     length: 30,
     variant: 'tentative',
