@@ -130,11 +130,13 @@ function App() {
   const playfieldRef = useRef(null);
   const dayColumnsRef = useRef(null);
   const dayHeaderRef = useRef(null);
+  const meetingRefs = useRef({});
   const boundsRef = useRef({
     playfield: { left: 0, top: 0, width: 0, height: 0 },
     dayColumns: { left: 0, top: 0, width: 0 },
     headerBottom: 0,
     paddleLane: { left: 0, top: 0, width: 0, height: 0 },
+    meetings: [],
   });
   const ballStateRef = useRef({
     x: 0,
@@ -211,18 +213,31 @@ function App() {
       const dayRect = dayColumnsRef.current.getBoundingClientRect();
       const headerRect = dayHeaderRef.current?.getBoundingClientRect();
       const laneRect = paddleLaneRef.current.getBoundingClientRect();
+      const meetingRects = Object.values(meetingRefs.current)
+        .filter(Boolean)
+        .map((node) => {
+          const rect = node.getBoundingClientRect();
+          return {
+            left: rect.left - playRect.left,
+            top: rect.top - playRect.top,
+            right: rect.right - playRect.left,
+            bottom: rect.bottom - playRect.top,
+          };
+        });
+
       boundsRef.current = {
         playfield: { left: playRect.left, top: playRect.top, width: playRect.width, height: playRect.height },
         dayColumns: { left: dayRect.left, top: dayRect.top, width: dayRect.width },
         headerBottom: headerRect ? headerRect.bottom : dayRect.top + 42,
         paddleLane: { left: laneRect.left, top: laneRect.top, width: laneRect.width, height: laneRect.height },
+        meetings: meetingRects,
       };
     };
 
     measure();
     window.addEventListener('resize', measure);
     return () => window.removeEventListener('resize', measure);
-  }, []);
+  }, [slotHeight]);
 
     // Position the ball on the paddle while awaiting launch so it appears anchored
     useEffect(() => {
@@ -308,6 +323,7 @@ function App() {
 
       const state = { ...ballStateRef.current };
       const bounds = boundsRef.current;
+      const meetings = bounds.meetings || [];
 
       const pfLeft = bounds.playfield.left;
       const pfTop = bounds.playfield.top;
@@ -359,6 +375,42 @@ function App() {
         ) {
           state.y = paddleTop - BALL_SIZE;
           state.vy = -Math.abs(state.vy);
+        }
+      }
+
+      // Meeting collisions (treat each block as a brick)
+      for (const rect of meetings) {
+        const ballLeft = state.x;
+        const ballRight = state.x + BALL_SIZE;
+        const ballTop = state.y;
+        const ballBottom = state.y + BALL_SIZE;
+
+        if (
+          ballRight > rect.left &&
+          ballLeft < rect.right &&
+          ballBottom > rect.top &&
+          ballTop < rect.bottom
+        ) {
+          const overlapTop = Math.abs(ballBottom - rect.top);
+          const overlapBottom = Math.abs(rect.bottom - ballTop);
+          const overlapLeft = Math.abs(ballRight - rect.left);
+          const overlapRight = Math.abs(rect.right - ballLeft);
+          const minOverlap = Math.min(overlapTop, overlapBottom, overlapLeft, overlapRight);
+
+          if (minOverlap === overlapTop) {
+            state.y = rect.top - BALL_SIZE;
+            state.vy = -Math.abs(state.vy);
+          } else if (minOverlap === overlapBottom) {
+            state.y = rect.bottom;
+            state.vy = Math.abs(state.vy);
+          } else if (minOverlap === overlapLeft) {
+            state.x = rect.left - BALL_SIZE;
+            state.vx = -Math.abs(state.vx);
+          } else {
+            state.x = rect.right;
+            state.vx = Math.abs(state.vx);
+          }
+          break;
         }
       }
 
@@ -428,6 +480,13 @@ function App() {
                         key={meeting.id}
                         className="meeting-wrapper"
                         style={{ top, height }}
+                        ref={(node) => {
+                          if (node) {
+                            meetingRefs.current[meeting.id] = node;
+                          } else {
+                            delete meetingRefs.current[meeting.id];
+                          }
+                        }}
                       >
                         <MeetingBlock
                           variant={meeting.variant}
