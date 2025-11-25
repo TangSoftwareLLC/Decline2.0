@@ -8,7 +8,8 @@ const MEETING_PADDING = 6;
 const DEBUG_NOW = false;
 const DEBUG_TIME_STRING = '17:50'; // 5:50 PM
 const BALL_SIZE = 14;
-const BALL_SPEED = { x: 180, y: 260 }; // px per second
+const BALL_SPEED = { x: 270, y: 390 }; // px per second
+const BALL_PADDLE_OFFSET = { x: 0, y: -2 }; // visual offset when ball sits on paddle
 
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -223,29 +224,71 @@ function App() {
     return () => window.removeEventListener('resize', measure);
   }, []);
 
+    // Position the ball on the paddle while awaiting launch so it appears anchored
+    useEffect(() => {
+      const positionOnPaddle = () => {
+        if (!awaitingLaunch) return;
+        if (!playfieldRef.current || !paddleRef.current || !paddleLaneRef.current) return;
+        const playRect = playfieldRef.current.getBoundingClientRect();
+        const paddleRect = paddleRef.current.getBoundingClientRect();
+
+        const x = (paddleRect.left - playRect.left) + (paddleRect.width / 2) - BALL_SIZE / 2 + BALL_PADDLE_OFFSET.x;
+        const y = (paddleRect.top - playRect.top) - BALL_SIZE + BALL_PADDLE_OFFSET.y;
+
+        ballStateRef.current = { ...ballStateRef.current, x, y, active: false };
+        setBallRender(ballStateRef.current);
+      };
+
+      positionOnPaddle();
+      window.addEventListener('resize', positionOnPaddle);
+      return () => window.removeEventListener('resize', positionOnPaddle);
+    }, [awaitingLaunch, paddleX]);
+
   useEffect(() => {
     const launchBall = () => {
       const { playfield, dayColumns, headerBottom } = boundsRef.current;
       if (!playfield.width || !dayColumns.width) return;
-      const startX = (dayColumns.left - playfield.left) + (dayColumns.width / 2) - BALL_SIZE / 2;
-      const startY = (headerBottom - playfield.top) + 20;
+
+      let startX;
+      let startY;
+      const vx = (Math.random() < 0.5 ? -1 : 1) * BALL_SPEED.x;
+      const vy = -Math.abs(BALL_SPEED.y);
+
+      if (paddleRef.current && playfieldRef.current) {
+        const playRect = playfieldRef.current.getBoundingClientRect();
+        const paddleRect = paddleRef.current.getBoundingClientRect();
+        startX = (paddleRect.left - playRect.left) + (paddleRect.width / 2) - BALL_SIZE / 2 + BALL_PADDLE_OFFSET.x;
+        startY = (paddleRect.top - playRect.top) - BALL_SIZE + BALL_PADDLE_OFFSET.y;
+      } else {
+        startX = (dayColumns.left - playfield.left) + (dayColumns.width / 2) - BALL_SIZE / 2;
+        startY = (headerBottom - playfield.top) + 20;
+      }
+
       ballStateRef.current = {
         x: startX,
         y: startY,
-        vx: BALL_SPEED.x,
-        vy: BALL_SPEED.y,
+        vx,
+        vy,
         active: true,
       };
       setBallRender(ballStateRef.current);
       setAwaitingLaunch(false);
     };
 
-    const handleClick = () => {
+    const handleKeyDown = (event) => {
       if (awaitingLaunch) launchBall();
     };
 
+    const handleClick = (event) => {
+      if (awaitingLaunch) launchBall();
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('click', handleClick);
-    return () => window.removeEventListener('click', handleClick);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('click', handleClick);
+    };
   }, [awaitingLaunch]);
 
   useEffect(() => {
@@ -424,7 +467,7 @@ function App() {
           className="ball"
           style={{
             transform: `translate(${ballRender.x}px, ${ballRender.y}px)`,
-            opacity: ballRender.active ? 1 : 0,
+            opacity: (ballRender.active || awaitingLaunch) ? 1 : 0,
           }}
           aria-hidden="true"
         />
