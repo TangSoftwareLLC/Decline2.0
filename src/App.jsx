@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import './App.css';
 import MeetingBlock from './components/MeetingBlock';
+import Button from './components/Button';
 
 const START_HOUR = 8;
 const END_HOUR = 18;
@@ -27,56 +28,56 @@ const INITIAL_MEETINGS = [
     title: 'Design Review',
     roomInfo: 'Conf Room A',
     organizerInfo: 'Laura Chen',
-  },
-  {
-    id: 'm2',
-    day: 5,
-    start: '13:30',
-    length: 30,
-    variant: 'tentative',
-    title: '1:1 Sync',
-    roomInfo: 'Virtual',
-    organizerInfo: 'Anthony Ruiz',
-  },
-  {
-    id: 'm3',
-    day: 1,
-    start: '10:00',
-    length: 120,
-    variant: 'accepted',
-    title: 'Product Planning',
-    roomInfo: 'Board Room',
-    organizerInfo: 'Leadership',
-  },
-  {
-    id: 'm4',
-    day: 2,
-    start: '08:30',
-    length: 30,
-    variant: 'accepted',
-    title: 'Daily Standup',
-    roomInfo: 'Breakout 1',
-    organizerInfo: 'Delivery Team',
-  },
-  {
-    id: 'm5',
-    day: 3,
-    start: '15:00',
-    length: 60,
-    variant: 'tentative',
-    title: 'Customer Call',
-    roomInfo: 'Zoom Room',
-    organizerInfo: 'CS Team',
-  },
-  {
-    id: 'm6',
-    day: 4,
-    start: '11:00',
-    length: 60,
-    variant: 'accepted',
-    title: 'Engineering Sync',
-    roomInfo: 'Main Conference',
-    organizerInfo: 'Eng Leads',
+  // },
+  // {
+  //   id: 'm2',
+  //   day: 5,
+  //   start: '13:30',
+  //   length: 30,
+  //   variant: 'tentative',
+  //   title: '1:1 Sync',
+  //   roomInfo: 'Virtual',
+  //   organizerInfo: 'Anthony Ruiz',
+  // },
+  // {
+  //   id: 'm3',
+  //   day: 1,
+  //   start: '10:00',
+  //   length: 120,
+  //   variant: 'accepted',
+  //   title: 'Product Planning',
+  //   roomInfo: 'Board Room',
+  //   organizerInfo: 'Leadership',
+  // },
+  // {
+  //   id: 'm4',
+  //   day: 2,
+  //   start: '08:30',
+  //   length: 30,
+  //   variant: 'accepted',
+  //   title: 'Daily Standup',
+  //   roomInfo: 'Breakout 1',
+  //   organizerInfo: 'Delivery Team',
+  // },
+  // {
+  //   id: 'm5',
+  //   day: 3,
+  //   start: '15:00',
+  //   length: 60,
+  //   variant: 'tentative',
+  //   title: 'Customer Call',
+  //   roomInfo: 'Zoom Room',
+  //   organizerInfo: 'CS Team',
+  // },
+  // {
+  //   id: 'm6',
+  //   day: 4,
+  //   start: '11:00',
+  //   length: 60,
+  //   variant: 'accepted',
+  //   title: 'Engineering Sync',
+  //   roomInfo: 'Main Conference',
+  //   organizerInfo: 'Eng Leads',
   },
 ];
 
@@ -778,6 +779,21 @@ function App() {
           }}
           aria-hidden="true"
         />
+        {/* Cleared overlay shown when all meetings are removed and ball is inactive */}
+        {meetings.length === 0 && !ballRender.active && (
+          <div className="cleared-overlay" role="dialog" aria-live="polite">
+            <div className="cleared-content">
+              <div className="cleared-text">You have cleared all meetings this week.</div>
+              <Button variant="primary" onClick={() => setMeetings(INITIAL_MEETINGS.map((m) => ({
+                ...m,
+                startMinutes: parseTimeString(m.start),
+                isRemoving: false,
+              })))}>
+                Next
+              </Button>
+            </div>
+          </div>
+        )}
         {showDebug && (
           <div className="debug-overlay" aria-live="polite">
             <div className="debug-row">
