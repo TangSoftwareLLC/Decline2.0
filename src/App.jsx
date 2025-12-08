@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import './App.css';
-import MeetingBlock from './components/MeetingBlock';
+import MeetingBlock, { MEETING_TITLES, ROOM_NAMES, ORGANIZER_NAMES } from './components/MeetingBlock';
 import Button from './components/Button';
 
 const START_HOUR = 8;
@@ -18,68 +18,52 @@ const PADDLE_MAX_DEFLECTION_DEG = 55; // max angle away from vertical on paddle 
 
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-const INITIAL_MEETINGS = [
-  {
-    id: 'm1',
-    day: 1,
-    start: '09:00',
-    length: 60,
-    variant: 'accepted',
-    title: 'Design Review',
-    roomInfo: 'Conf Room A',
-    organizerInfo: 'Laura Chen',
-  // },
-  // {
-  //   id: 'm2',
-  //   day: 5,
-  //   start: '13:30',
-  //   length: 30,
-  //   variant: 'tentative',
-  //   title: '1:1 Sync',
-  //   roomInfo: 'Virtual',
-  //   organizerInfo: 'Anthony Ruiz',
-  // },
-  // {
-  //   id: 'm3',
-  //   day: 1,
-  //   start: '10:00',
-  //   length: 120,
-  //   variant: 'accepted',
-  //   title: 'Product Planning',
-  //   roomInfo: 'Board Room',
-  //   organizerInfo: 'Leadership',
-  // },
-  // {
-  //   id: 'm4',
-  //   day: 2,
-  //   start: '08:30',
-  //   length: 30,
-  //   variant: 'accepted',
-  //   title: 'Daily Standup',
-  //   roomInfo: 'Breakout 1',
-  //   organizerInfo: 'Delivery Team',
-  // },
-  // {
-  //   id: 'm5',
-  //   day: 3,
-  //   start: '15:00',
-  //   length: 60,
-  //   variant: 'tentative',
-  //   title: 'Customer Call',
-  //   roomInfo: 'Zoom Room',
-  //   organizerInfo: 'CS Team',
-  // },
-  // {
-  //   id: 'm6',
-  //   day: 4,
-  //   start: '11:00',
-  //   length: 60,
-  //   variant: 'accepted',
-  //   title: 'Engineering Sync',
-  //   roomInfo: 'Main Conference',
-  //   organizerInfo: 'Eng Leads',
-  },
-];
+// Helper: generate a randomized weekly set of meetings (one per day)
+const VARIANTS = ['tentative', 'accepted'];
+const POSSIBLE_LENGTHS = [15, 30, 60, 120];
+
+function randomChoice(arr) {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
+function snapToQuarter(minutes) {
+  return Math.round(minutes / 15) * 15;
+}
+
+function generateWeeklyMeetings() {
+  const meetings = [];
+  // Only create meetings for weekdays (Mon-Fri -> day 1..5)
+  for (let day = 1; day <= 5; day += 1) {
+    // Monday (day === 1) should always have a 2-hour Project "DayOne" stand-up
+    let length = randomChoice(POSSIBLE_LENGTHS);
+    let startMinutes;
+    if (day === 1) {
+      length = 120;
+      // default Monday stand-up at 09:00
+      startMinutes = clampMeetingStart(9 * 60, length);
+    } else {
+      const earliest = START_HOUR * 60;
+      const latestStart = (END_HOUR * 60) - length;
+      const window = Math.max(earliest, latestStart) - earliest;
+      const rndOffset = Math.floor(Math.random() * Math.max(1, Math.floor(window / 15) + 1)) * 15;
+      startMinutes = clampMeetingStart(earliest + rndOffset, length);
+    }
+
+    const m = {
+      id: `m-${day}-${Date.now().toString(36).slice(-4)}-${Math.floor(Math.random() * 1000)}`,
+      day,
+      startMinutes,
+      length,
+      variant: day === 1 ? 'accepted' : randomChoice(VARIANTS),
+      title: day === 1 ? 'Project "DayOne" stand-up' : randomChoice(MEETING_TITLES),
+      roomInfo: day === 1 ? 'Main Conference' : randomChoice(ROOM_NAMES),
+      organizerInfo: day === 1 ? 'Project Lead' : randomChoice(ORGANIZER_NAMES),
+      isRemoving: false,
+    };
+    meetings.push(m);
+  }
+  return meetings;
+}
 
 const hourMarks = Array.from({ length: (END_HOUR - START_HOUR) + 1 }, (_, idx) => {
   const hour = START_HOUR + idx;
@@ -142,11 +126,7 @@ const clampMeetingStart = (startMinutes, length) => {
 function App() {
   const [slotHeight, setSlotHeight] = useState(computeSlotHeight);
   const [currentMinutes, setCurrentMinutes] = useState(getCurrentMinutes);
-  const [meetings, setMeetings] = useState(() => INITIAL_MEETINGS.map((meeting) => ({
-    ...meeting,
-    startMinutes: parseTimeString(meeting.start),
-    isRemoving: false,
-  })));
+  const [meetings, setMeetings] = useState(() => generateWeeklyMeetings());
   const [paddleX, setPaddleX] = useState(0);
   const paddleRef = useRef(null);
   const paddleLaneRef = useRef(null);
@@ -784,11 +764,7 @@ function App() {
           <div className="cleared-overlay" role="dialog" aria-live="polite">
             <div className="cleared-content">
               <div className="cleared-text">You have cleared all meetings this week.</div>
-              <Button variant="primary" onClick={() => setMeetings(INITIAL_MEETINGS.map((m) => ({
-                ...m,
-                startMinutes: parseTimeString(m.start),
-                isRemoving: false,
-              })))}>
+              <Button variant="primary" onClick={() => setMeetings(generateWeeklyMeetings())}>
                 Next
               </Button>
             </div>

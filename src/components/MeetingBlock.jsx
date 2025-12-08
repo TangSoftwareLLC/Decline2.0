@@ -110,3 +110,6 @@ const MeetingBlock = ({
 };
 
 export default MeetingBlock;
+
+// Export raw data arrays so other modules can build deterministic/randomized meetings
+export { MEETING_TITLES, ROOM_NAMES, ORGANIZER_NAMES };
