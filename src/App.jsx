@@ -308,6 +308,14 @@ function App() {
     el.scrollTop = el.scrollHeight;
   }, [debugLog]);
 
+  useEffect(() => {
+    if (meetings.length === 0) {
+      const state = { ...ballStateRef.current, active: false, vx: 0, vy: 0 };
+      ballStateRef.current = state;
+      setBallRender(state);
+    }
+  }, [meetings.length]);
+
   const days = useMemo(() => {
     const today = new Date();
     const todayKey = today.toDateString();
