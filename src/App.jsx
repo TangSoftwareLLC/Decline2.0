@@ -294,6 +294,7 @@ function App() {
       const state = { ...ballStateRef.current, active: false, vx: 0, vy: 0 };
       ballStateRef.current = state;
       setBallRender(state);
+      setAwaitingLaunch(true);
     }
   }, [meetings.length]);
 
@@ -420,7 +421,10 @@ function App() {
     }, [awaitingLaunch, paddleX]);
 
   useEffect(() => {
+    const clearedOverlayVisible = meetings.length === 0 && !ballRender.active;
+
     const launchBall = () => {
+      if (clearedOverlayVisible) return;
       const { playfield, dayColumns, headerBottom } = boundsRef.current;
       if (!playfield.width || !dayColumns.width) return;
 
@@ -455,10 +459,12 @@ function App() {
         setShowDebug((prev) => !prev);
         return;
       }
+      if (clearedOverlayVisible) return;
       if (awaitingLaunch) launchBall();
     };
 
     const handleClick = (event) => {
+      if (clearedOverlayVisible) return;
       if (awaitingLaunch) launchBall();
     };
 
@@ -468,7 +474,7 @@ function App() {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('click', handleClick);
     };
-  }, [awaitingLaunch]);
+  }, [awaitingLaunch, meetings.length, ballRender.active]);
 
   useEffect(() => {
     let animationId;
@@ -764,7 +770,13 @@ function App() {
           <div className="cleared-overlay" role="dialog" aria-live="polite">
             <div className="cleared-content">
               <div className="cleared-text">You have cleared all meetings this week.</div>
-              <Button variant="primary" onClick={() => setMeetings(generateWeeklyMeetings())}>
+              <Button
+                variant="primary"
+                onClick={(event) => {
+                  event.stopPropagation(); // prevent this click from launching the ball
+                  setMeetings(generateWeeklyMeetings());
+                }}
+              >
                 Next
               </Button>
             </div>
