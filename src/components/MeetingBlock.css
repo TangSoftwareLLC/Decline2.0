@@ -125,3 +125,19 @@
 .meeting-block.len-30 .meeting-organizer-info {
   display: none;
 }
+
+/* Extra-tight styling for 15-minute slots so text can fit */
+.meeting-block.len-15 {
+  padding: 0 6px 4px 10px; /* remove top padding to maximize visible text */
+  overflow: visible;
+}
+
+.meeting-block.len-15 .meeting-content {
+  overflow: visible;
+}
+
+.meeting-block.len-15 .meeting-title {
+  font-size: clamp(9px, 2.4vw, 11px);
+  line-height: 1.05;
+  white-space: nowrap;
+}
