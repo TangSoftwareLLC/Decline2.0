@@ -214,8 +214,14 @@ function App() {
         };
       }
 
-      afterLength = Math.max(30, beforeLength - 30);
-      afterStart = beforeStart + (side === 'top' ? 15 : 0);
+      if (side === 'top') {
+        // Push start time down by 15, keep the original end time (reduce length by 15)
+        afterStart = beforeStart + 15;
+        afterLength = Math.max(30, beforeLength - 15);
+      } else {
+        // Bottom hit trims from the end
+        afterLength = Math.max(30, beforeLength - 30);
+      }
       afterStart = clampMeetingStart(afterStart, afterLength);
 
       entry = {
