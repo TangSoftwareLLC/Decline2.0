@@ -126,6 +126,15 @@
   display: none;
 }
 
+.meeting-block.len-30 {
+  padding: 0 8px; /* remove vertical padding so text can sit dead-center */
+  align-items: center;
+}
+
+.meeting-block.len-30 .meeting-content {
+  justify-content: center;
+  align-items: center;
+}
 /* Extra-tight styling for 15-minute slots so text can fit */
 .meeting-block.len-15 {
   padding: 0 6px 4px 10px; /* remove top padding to maximize visible text */
