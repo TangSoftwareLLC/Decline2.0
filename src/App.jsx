@@ -1,18 +1,3 @@
-<<<<<<< HEAD
-import React from 'react';
-import './App.css';
-import Calendar from './components/Calendar/Calendar';
-
-function App() {
-  return (
-    <div className="app">
-      <header className="app-header">
-        <h1>Weekly Calendar</h1>
-      </header>
-      <main className="app-content">
-        <Calendar />
-      </main>
-=======
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import './App.css';
 import MeetingBlock, { MEETING_TITLES, ROOM_NAMES, ORGANIZER_NAMES } from './components/MeetingBlock';
@@ -883,7 +868,6 @@ function App() {
           </div>
         )}
       </div>
->>>>>>> add-next-button-logic
     </div>
   );
 }
