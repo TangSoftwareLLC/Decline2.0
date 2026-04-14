@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import './App.css';
 import MeetingBlock, { MEETING_TITLES, ROOM_NAMES, ORGANIZER_NAMES } from './components/MeetingBlock';
 import Button from './components/Button';
+import Paddle from './components/Paddle';
 
 const START_HOUR = 8;
 const END_HOUR = 18;
@@ -127,10 +128,8 @@ function App() {
   const [slotHeight, setSlotHeight] = useState(computeSlotHeight);
   const [currentMinutes, setCurrentMinutes] = useState(getCurrentMinutes);
   const [meetings, setMeetings] = useState(() => generateWeeklyMeetings());
-  const [paddleX, setPaddleX] = useState(0);
   const paddleRef = useRef(null);
   const paddleLaneRef = useRef(null);
-  const paddleShadowRef = useRef(null);
   const playfieldRef = useRef(null);
   const dayColumnsRef = useRef(null);
   const dayHeaderRef = useRef(null);
@@ -369,37 +368,6 @@ function App() {
   }, []);
 
   useEffect(() => {
-    const updatePosition = (event) => {
-      if (!paddleRef.current || !paddleLaneRef.current) return;
-      const laneRect = paddleLaneRef.current.getBoundingClientRect();
-      const paddleRect = paddleRef.current.getBoundingClientRect();
-      const offsetX = event.clientX - laneRect.left - paddleRect.width / 2;
-      const leftMargin = Math.max(0, Math.min(laneRect.width * 0.04, 28)); // allow slight overtravel left
-      const shadowStyle = paddleShadowRef.current ? window.getComputedStyle(paddleShadowRef.current) : null;
-      const extraRight = shadowStyle ? parseFloat(shadowStyle.paddingRight || '0') : 0;
-      const maxX = laneRect.width - paddleRect.width + extraRight;
-      const clamped = Math.max(-leftMargin, Math.min(offsetX, maxX));
-      setPaddleX(clamped);
-    };
-
-    const centerPaddle = () => {
-      if (!paddleRef.current || !paddleLaneRef.current) return;
-      const laneRect = paddleLaneRef.current.getBoundingClientRect();
-      const paddleRect = paddleRef.current.getBoundingClientRect();
-      const centered = (laneRect.width - paddleRect.width) / 2;
-      setPaddleX(centered);
-    };
-
-    centerPaddle();
-    window.addEventListener('resize', centerPaddle);
-    window.addEventListener('mousemove', updatePosition);
-    return () => {
-      window.removeEventListener('resize', centerPaddle);
-      window.removeEventListener('mousemove', updatePosition);
-    };
-  }, []);
-
-  useEffect(() => {
     const measure = () => {
       if (!playfieldRef.current || !dayColumnsRef.current || !paddleLaneRef.current) return;
       const playRect = playfieldRef.current.getBoundingClientRect();
@@ -439,25 +407,25 @@ function App() {
     };
   }, [slotHeight, meetings]);
 
-    // Position the ball on the paddle while awaiting launch so it appears anchored
-    useEffect(() => {
-      const positionOnPaddle = () => {
-        if (!awaitingLaunch) return;
-        if (!playfieldRef.current || !paddleRef.current || !paddleLaneRef.current) return;
-        const playRect = playfieldRef.current.getBoundingClientRect();
-        const paddleRect = paddleRef.current.getBoundingClientRect();
+  const positionBallOnPaddle = useCallback(() => {
+    if (!awaitingLaunch) return;
+    if (!playfieldRef.current || !paddleRef.current) return;
+    const playRect = playfieldRef.current.getBoundingClientRect();
+    const paddleRect = paddleRef.current.getBoundingClientRect();
 
-        const x = (paddleRect.left - playRect.left) + (paddleRect.width / 2) - BALL_SIZE / 2 + BALL_PADDLE_OFFSET.x;
-        const y = (paddleRect.top - playRect.top) - BALL_SIZE + BALL_PADDLE_OFFSET.y;
+    const x = (paddleRect.left - playRect.left) + (paddleRect.width / 2) - BALL_SIZE / 2 + BALL_PADDLE_OFFSET.x;
+    const y = (paddleRect.top - playRect.top) - BALL_SIZE + BALL_PADDLE_OFFSET.y;
 
-        ballStateRef.current = { ...ballStateRef.current, x, y, active: false };
-        setBallRender(ballStateRef.current);
-      };
+    ballStateRef.current = { ...ballStateRef.current, x, y, active: false };
+    setBallRender(ballStateRef.current);
+  }, [awaitingLaunch]);
 
-      positionOnPaddle();
-      window.addEventListener('resize', positionOnPaddle);
-      return () => window.removeEventListener('resize', positionOnPaddle);
-    }, [awaitingLaunch, paddleX]);
+  useEffect(() => {
+    if (!awaitingLaunch) return;
+    positionBallOnPaddle();
+    window.addEventListener('resize', positionBallOnPaddle);
+    return () => window.removeEventListener('resize', positionBallOnPaddle);
+  }, [awaitingLaunch, positionBallOnPaddle]);
 
   useEffect(() => {
     const launchBall = () => {
@@ -787,22 +755,11 @@ function App() {
           </div>
         </section>
 
-        <section className="paddle-area" aria-label="game paddle lane">
-          <div className="paddle-grid">
-            <div className="paddle-gutter" />
-            <div className="paddle-lane" ref={paddleLaneRef}>
-              <div className="paddle-shadow" ref={paddleShadowRef}>
-                <div
-                  className="paddle"
-                  ref={paddleRef}
-                  style={{ transform: `translate(${paddleX}px, -50%)` }}
-                >
-                  <div className="paddle-grip" />
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
+        <Paddle
+          paddleRef={paddleRef}
+          laneRef={paddleLaneRef}
+          onMove={positionBallOnPaddle}
+        />
 
         <div
           className="ball"
