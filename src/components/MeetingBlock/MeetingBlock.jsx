@@ -82,31 +82,34 @@ export const HEIGHT_MAP = {
 const MeetingBlock = ({
   variant = generateRandomVariant(),
   length = generateRandomLength(),
+  height,
   title,
   roomInfo,
   organizerInfo,
 }) => {
-  const height = HEIGHT_MAP[length] || 40;
-  const className = `meeting-block ${variant}`;
+  const resolvedHeight = (height ?? HEIGHT_MAP[length]) || 40;
+  const lengthClass = `len-${length}`;
+  const className = `meeting-block ${variant} ${lengthClass}`;
 
-  // Generate random values if props are not provided
-  const displayTitle = generateRandomTitle();
-  const displayRoomInfo = generateRandomRoomInfo();
-  const displayOrganizerInfo = generateRandomOrganizerInfo();
+  // Use provided data or fall back to generated filler content
+  const displayTitle = title || generateRandomTitle();
+  const displayRoomInfo = roomInfo || generateRandomRoomInfo();
+  const displayOrganizerInfo = organizerInfo || generateRandomOrganizerInfo();
+  const showRoom = length >= 60; // only 60+ show room
+  const showOrganizer = length >= 60; // only 60+ show organizer
 
   return (
-    <div className={className} style={{ height }} aria-label={`meeting ${displayTitle}`}>
+    <div className={className} style={{ height: resolvedHeight }} aria-label={`meeting ${displayTitle}`}>
       <div className="meeting-content">
         <div className="meeting-title">{displayTitle}</div>
-        {length !== 15 && (
-          <>
-            <div className="meeting-room-info">{displayRoomInfo}</div>
-            <div className="meeting-organizer-info">{displayOrganizerInfo}</div>
-          </>
-        )}
+        {showRoom && <div className="meeting-room-info">{displayRoomInfo}</div>}
+        {showOrganizer && <div className="meeting-organizer-info">{displayOrganizerInfo}</div>}
       </div>
     </div>
   );
 };
 
 export default MeetingBlock;
+
+// Export raw data arrays so other modules can build deterministic/randomized meetings
+export { MEETING_TITLES, ROOM_NAMES, ORGANIZER_NAMES };
