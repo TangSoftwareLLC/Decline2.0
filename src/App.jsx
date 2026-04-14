@@ -158,6 +158,9 @@ function App() {
   const prevMeetingsRef = useRef(null);
   const debugLogRef = useRef(null);
   const [showDebug, setShowDebug] = useState(false);
+  // When true, the app will wait for an explicit user interaction (click/keydown)
+  // before allowing the ball to launch. Set this after repopulating meetings via Next.
+  const requireUserLaunchRef = useRef(false);
 
   const recordDebug = useCallback((entry, markAsLastHit = false) => {
     setDebugLog((prev) => {
@@ -243,6 +246,43 @@ function App() {
       recordDebug({ type: 'impact', ...entry }, true);
     }
   }, [scheduleMeetingRemoval, recordDebug]);
+
+  const handleNext = useCallback(() => {
+    // clear any pending removal timers (defensive)
+    Object.values(removalTimersRef.current).forEach((id) => clearTimeout(id));
+    removalTimersRef.current = {};
+
+    // clear debug and last-hit state
+    setDebugLog([]);
+    lastHitRef.current = { id: null, until: 0, needsClear: false };
+    setLastHitInfo(null);
+
+    // reset ball to inactive
+    ballStateRef.current = { ...ballStateRef.current, active: false, vx: BALL_SPEED.x, vy: BALL_SPEED.y };
+    setBallRender(ballStateRef.current);
+
+    // Place ball on paddle immediately (so UI shows anchored ball)
+    if (playfieldRef.current && paddleRef.current) {
+      const playRect = playfieldRef.current.getBoundingClientRect();
+      const paddleRect = paddleRef.current.getBoundingClientRect();
+      const x = (paddleRect.left - playRect.left) + (paddleRect.width / 2) - BALL_SIZE / 2 + BALL_PADDLE_OFFSET.x;
+      const y = (paddleRect.top - playRect.top) - BALL_SIZE + BALL_PADDLE_OFFSET.y;
+      ballStateRef.current = { ...ballStateRef.current, x, y, active: false };
+      setBallRender(ballStateRef.current);
+    }
+
+    setAwaitingLaunch(true);
+
+    // generate a fresh set of meetings
+    setMeetings(generateWeeklyMeetings());
+
+    // Require the next launch to come from user input (click/keydown).
+    // Delay slightly to avoid the same click that triggers Next from
+    // bubbling and launching the ball.
+    setTimeout(() => {
+      requireUserLaunchRef.current = true;
+    }, 0);
+  }, []);
 
   useEffect(() => () => {
     Object.values(removalTimersRef.current).forEach((id) => clearTimeout(id));
@@ -455,11 +495,24 @@ function App() {
         setShowDebug((prev) => !prev);
         return;
       }
-      if (awaitingLaunch) launchBall();
+      // Only allow launch when awaitingLaunch is true. If we've explicitly
+      // required a user launch (after Next), clear the requirement when the
+      // user actually interacts and then launch.
+      if (awaitingLaunch) {
+        if (requireUserLaunchRef.current) {
+          requireUserLaunchRef.current = false;
+        }
+        launchBall();
+      }
     };
 
     const handleClick = (event) => {
-      if (awaitingLaunch) launchBall();
+      if (awaitingLaunch) {
+        if (requireUserLaunchRef.current) {
+          requireUserLaunchRef.current = false;
+        }
+        launchBall();
+      }
     };
 
     window.addEventListener('keydown', handleKeyDown);
@@ -764,7 +817,7 @@ function App() {
           <div className="cleared-overlay" role="dialog" aria-live="polite">
             <div className="cleared-content">
               <div className="cleared-text">You have cleared all meetings this week.</div>
-              <Button variant="primary" onClick={() => setMeetings(generateWeeklyMeetings())}>
+              <Button variant="primary" onClick={handleNext}>
                 Next
               </Button>
             </div>
